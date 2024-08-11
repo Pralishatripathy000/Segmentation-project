@@ -1,0 +1,100 @@
+#include <iostream>
+#include <vector>
+#include <string>
+
+class Segment {
+public:
+    std::string name;
+    int base;
+    int limit;
+
+    Segment(const std::string& name, int base, int limit)
+        : name(name), base(base), limit(limit) {}
+};
+
+class Process {
+public:
+    std::string processName;
+    std::vector<Segment> segments;
+
+    Process(const std::string& name) : processName(name) {}
+
+    void addSegment(const std::string& segName, int base, int limit) {
+        segments.emplace_back(segName, base, limit);
+    }
+
+    void displaySegmentInfo() {
+        std::cout << "Process: " << processName << std::endl;
+        for (const auto& seg : segments) {
+            std::cout << "Segment Name: " << seg.name << ", Base: " << seg.base << ", Limit: " << seg.limit << std::endl;
+        }
+    }
+
+    int logicalToPhysicalAddress(const std::string& segName, int logicalAddr) {
+        for (const auto& seg : segments) {
+            if (seg.name == segName) {
+                if (logicalAddr >= 0 && logicalAddr < seg.limit) {
+                    return seg.base + logicalAddr;
+                } else {
+                    throw std::out_of_range("Logical address is out of segment bounds.");
+                }
+            }
+        }
+        throw std::invalid_argument("Segment not found.");
+    }
+};
+
+class SegmentationSystem {
+private:
+    std::vector<Process> processes;
+
+public:
+    void createProcess(const std::string& name) {
+        processes.emplace_back(name);
+    }
+
+    Process& getProcess(const std::string& name) {
+        for (auto& process : processes) {
+            if (process.processName == name) {
+                return process;
+            }
+        }
+        throw std::invalid_argument("Process not found.");
+    }
+
+    void displayAllProcesses() {
+        for (const auto& process : processes) {
+            process.displaySegmentInfo();
+        }
+    }
+};
+
+int main() {
+    SegmentationSystem system;
+
+    system.createProcess("Process1");
+    Process& p1 = system.getProcess("Process1");
+
+    p1.addSegment("Code", 0, 100);
+    p1.addSegment("Data", 100, 150);
+    p1.addSegment("Stack", 250, 50);
+
+    p1.displaySegmentInfo();
+
+    try {
+        int physicalAddr = p1.logicalToPhysicalAddress("Data", 20);
+        std::cout << "Physical Address for Data segment with logical address 20: " << physicalAddr << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
+    }
+
+    system.createProcess("Process2");
+    Process& p2 = system.getProcess("Process2");
+
+    p2.addSegment("Code", 0, 120);
+    p2.addSegment("Heap", 120, 180);
+
+    p2.displaySegmentInfo();
+
+    return 0;
+}
